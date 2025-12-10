@@ -1,0 +1,98 @@
+[versions]
+agp = "8.11.2"
+android-compileSdk = "36"
+android-minSdk = "24"
+android-targetSdk = "36"
+androidx-activity = "1.12.1"
+androidx-core = "1.17.0"
+androidx-lifecycle = "2.9.6"
+androidx-security = "1.1.0-alpha06"
+coilCompose = "2.6.0"
+composeMultiplatform = "1.9.3"
+composeCompiler = "2.2.21"
+composeBom = "2024.09.03"
+gson = "2.10.1"
+junit = "4.13.2"
+kotlin = "2.2.21"
+kotlinx-coroutines = "1.10.2"
+kotlinxSerializationJson = "1.6.0"
+lifecycleRuntimeKtx = "2.10.0"
+material3 = "1.2.1"
+razorpay = "1.6.41"
+runtimeAndroid = "1.10.0"
+kotlinxDatetime = "0.6.1"
+
+
+[libraries]
+# Security Crypto
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidx-security" }
+
+# Core Android
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.0" }
+
+# Activity & Lifecycle
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version = "2.8.0" }
+androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version = "2.8.0" }
+
+# Compose BOM
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+
+# Compose UI
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+
+# Compose Material3
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+
+# Material Icons - WITH VERSION
+androidx-compose-material-icons = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "material3" }
+
+# Compose Runtime
+androidx-compose-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
+
+# Coroutines
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+
+# Serialization
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+
+# Coil Image Loading
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+
+# Gson
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+
+
+# Kotlin Test
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+# Testing
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-testExt-junit = { module = "androidx.test.ext:junit", version = "1.2.1" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.6.1" }
+
+# Third-party
+razorpay-checkout = { module = "com.razorpay:checkout", version.ref = "razorpay" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

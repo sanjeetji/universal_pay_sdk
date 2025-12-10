@@ -1,0 +1,7 @@
+platform :ios, '14.1'
+
+target 'iosApp' do
+  use_frameworks!
+  # This name must match your KMP cocoapods.framework baseName (here: "shared")
+  pod 'shared', :path => '../shared'
+end
