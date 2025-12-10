@@ -92,6 +92,8 @@ kotlin {
 
             // Third-party
             implementation(libs.razorpay.checkout)
+
+            implementation(libs.androidx.ui.tooling)
         }
 
         iosMain.dependencies {
