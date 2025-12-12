@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
+/*@Composable
 fun UniversalPayDemo() {
     val universalPay = UniversalPay.get()
     val scope = rememberCoroutineScope()
@@ -272,7 +272,373 @@ fun UniversalPayDemo() {
             }
         }
     }
+}*/
+
+@Composable
+fun UniversalPayDemo() {
+    val universalPay = UniversalPay.get()
+    val scope = rememberCoroutineScope()
+
+    var uiState by remember { mutableStateOf(PaymentDemoState()) }
+    var selectedGateway by remember { mutableStateOf<PaymentGateway?>(null) }
+    var savedMethods by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) } // gatewayId -> methodIds
+
+    LaunchedEffect(Unit) {
+        uiState = try {
+            val gateways = universalPay.getGateways()
+            val methodsPerGateway = gateways.associate { gateway ->
+                gateway.id to emptyList<String>()
+            }
+            uiState.copy(
+                gateways = gateways,
+                isInitialized = true
+            ).also { savedMethods = methodsPerGateway }
+        } catch (e: Exception) {
+            uiState.copy(
+                lastResult = PaymentResult.Failure(
+                    "INIT_ERROR",
+                    e.message ?: "Initialization failed",
+                    "sdk"
+                )
+            )
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Header
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Payment,
+                        contentDescription = "Payment",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "UniversalPay SDK Demo",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${uiState.gateways.size} Gateways Connected",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Init status
+        if (!uiState.isInitialized) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Initializing SDK...",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        // Selected gateway info + actions
+        item {
+            SelectedGatewaySection(
+                selectedGateway = selectedGateway,
+                uiState = uiState,
+                isLoading = uiState.isLoading,
+                onSetupClick = { gateway ->
+                    scope.launch {
+                        uiState = uiState.copy(isLoading = true)
+                        try {
+                            val result = universalPay.savePaymentMethod(
+                                customerId = "demo_user_123",
+                                gatewayId = gateway.id
+                            )
+                            if (result is PaymentResult.Success && result.paymentMethodId != null) {
+                                val updated = savedMethods.toMutableMap()
+                                val list = updated[gateway.id].orEmpty() + result.paymentMethodId!!
+                                updated[gateway.id] = list
+                                savedMethods = updated
+                            }
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                lastResult = result,
+                                savedMethodId = if (result is PaymentResult.Success) result.paymentMethodId else null
+                            )
+                        } catch (e: Exception) {
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                lastResult = PaymentResult.Failure(
+                                    "SETUP_ERROR",
+                                    e.message ?: "Setup failed",
+                                    gateway.id
+                                )
+                            )
+                        }
+                    }
+                },
+                onPayClick = { gateway, methodId ->
+                    scope.launch {
+                        uiState = uiState.copy(isLoading = true)
+                        try {
+                            val request = PaymentRequest(
+                                amount = 999.0,
+                                currency = "INR",
+                                orderId = "demo_order_${System.currentTimeMillis()}",
+                                customerId = "demo_user_123"
+                            )
+                            val result = universalPay.pay(request, methodId)
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                lastResult = result
+                            )
+                        } catch (e: Exception) {
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                lastResult = PaymentResult.Failure(
+                                    "PAY_ERROR",
+                                    e.message ?: "Payment failed",
+                                    "sdk"
+                                )
+                            )
+                        }
+                    }
+                },
+                savedMethodsForGateway = { gatewayId -> savedMethods[gatewayId].orEmpty() }
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Gateway selector
+        item {
+            Text(
+                text = "Gateways (${uiState.gateways.size})",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        if (uiState.gateways.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No gateways available",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            items(uiState.gateways) { gateway ->
+                GatewayCard(
+                    gateway = gateway,
+                    isSelected = selectedGateway?.id == gateway.id,
+                    onClick = { selectedGateway = gateway }
+                )
+            }
+        }
+
+        // Result
+        uiState.lastResult?.let { result ->
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                ResultCard(result = result)
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
 }
+
+@Composable
+private fun SelectedGatewaySection(
+    selectedGateway: PaymentGateway?,
+    uiState: PaymentDemoState,
+    isLoading: Boolean,
+    onSetupClick: (PaymentGateway) -> Unit,
+    onPayClick: (PaymentGateway, String?) -> Unit,
+    savedMethodsForGateway: (String) -> List<String>
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Selected Gateway",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (selectedGateway == null) {
+                Text(
+                    text = "Tap a gateway below to select it.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                return@Column
+            }
+
+            Text(
+                text = "${selectedGateway.name} (${selectedGateway.category.name})",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+
+            // Options (per-gateway)
+            val options = remember(selectedGateway.id) {
+                selectedGateway.getOptions(countryCode = "IN")
+            }
+
+            if (options.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Options:",
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                val options = remember(selectedGateway.id) {
+                    selectedGateway.getOptions(countryCode = "IN")
+                }
+
+                if (options.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Options (${options.size}):",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Column {
+                        options.forEachIndexed { index, _ ->
+                            Text(
+                                text = "• Option ${index + 1}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Saved methods for this gateway
+            val methods = savedMethodsForGateway(selectedGateway.id)
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Saved Methods: ${methods.size}",
+                style = MaterialTheme.typography.labelLarge
+            )
+            if (methods.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Column {
+                    methods.forEach { id ->
+                        Text(
+                            text = "• $id",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Setup method
+            OutlinedButton(
+                onClick = { onSetupClick(selectedGateway) },
+                enabled = !isLoading
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CreditCard,
+                        contentDescription = "Save"
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Setup Payment Method")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Pay using last saved or any method id
+            Button(
+                onClick = {
+                    val methodId = methods.lastOrNull() ?: uiState.savedMethodId
+                    onPayClick(selectedGateway, methodId)
+                },
+                enabled = !isLoading && (methods.isNotEmpty() || uiState.savedMethodId != null)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Pay"
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Pay ₹999")
+                }
+            }
+
+            if (isLoading) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Processing...", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
+
+
 
 @Composable
 fun GatewayCard(gateway: PaymentGateway, isSelected: Boolean, onClick: () -> Unit) {
